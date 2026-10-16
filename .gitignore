@@ -1,0 +1,41 @@
+# Go build artifacts and local workspace files
+/bin/
+/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+/go.work
+/go.work.sum
+
+# Test coverage and profiling output
+/coverage/
+/coverage.out
+/coverage.html
+*.prof
+
+# Local environment configuration (may contain secrets)
+.env
+.env.*
+!.env.example
+!.env.sample
+.envrc
+.direnv/
+
+# Logs
+*.log
+
+# Editor settings and temporary files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS-generated files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
