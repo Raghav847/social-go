@@ -1,11 +1,10 @@
 package main
 
 import (
-	"log"
-
 	"github.com/Raghav847/social-go/internal/db"
 	"github.com/Raghav847/social-go/internal/env"
 	"github.com/Raghav847/social-go/internal/store"
+	"go.uber.org/zap"
 )
 
 //	@title			social-go API
@@ -38,6 +37,9 @@ func main() {
 		env: env.GetString("ENV", "development"),
 	}
 
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
 	db, err := db.New(
 		cfg.db.addr,
 		cfg.db.maxOpenConns,
@@ -45,17 +47,18 @@ func main() {
 		cfg.db.maxIdleTime,
 	)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 	defer db.Close()
-	log.Print("db connection established")
+	logger.Info("db connection established")
 
 	store := store.NewStore(db)
 	app := &application{
 		config: cfg,
 		store:  store,
+		logger: logger,
 	}
 
 	mux := app.mount()
-	log.Fatal(app.run(mux))
+	logger.Fatal(app.run(mux))
 }
