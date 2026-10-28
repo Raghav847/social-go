@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Raghav847/social-go/docs"
+	"github.com/Raghav847/social-go/internal/mailer"
 	"github.com/Raghav847/social-go/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -19,13 +20,26 @@ type application struct {
 	config config
 	store  store.Storage
 	logger *zap.SugaredLogger
+	mailer mailer.Client
 }
 
 type config struct {
-	addr   string
-	db     dbConfig
-	env    string
-	apiURL string
+	addr        string
+	db          dbConfig
+	env         string
+	apiURL      string
+	mail        mailConfig
+	frontendURL string
+}
+
+type mailConfig struct {
+	mailtrap  mailtrapConfig
+	fromEmail string
+	exp       time.Duration
+}
+
+type mailtrapConfig struct {
+	apiKey string
 }
 
 type dbConfig struct {
@@ -68,6 +82,8 @@ func (app *application) mount() http.Handler {
 		})
 
 		r.Route("/users", func(r chi.Router) {
+			r.Put("/activate/{token}", app.activateUserHandler)
+
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.userContextMiddleware)
 				r.Get("/", app.getUserHandler)
@@ -79,6 +95,10 @@ func (app *application) mount() http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Get("/feed", app.getUserFeedHandler)
 			})
+		})
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
+			//r.Post("/token", app.createTokenHandler)
 		})
 	})
 

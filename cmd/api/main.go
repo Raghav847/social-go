@@ -1,8 +1,11 @@
 package main
 
 import (
+	"time"
+
 	"github.com/Raghav847/social-go/internal/db"
 	"github.com/Raghav847/social-go/internal/env"
+	"github.com/Raghav847/social-go/internal/mailer"
 	"github.com/Raghav847/social-go/internal/store"
 	"go.uber.org/zap"
 )
@@ -26,8 +29,9 @@ import (
 // @description
 func main() {
 	cfg := config{
-		addr:   env.GetString("ADDR", ":8080"),
-		apiURL: env.GetString("EXTERNAL_URL", "localhost:8080"),
+		addr:        env.GetString("ADDR", ":8080"),
+		apiURL:      env.GetString("EXTERNAL_URL", "localhost:8080"),
+		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:5173"),
 		db: dbConfig{
 			addr:         env.GetString("DB_ADDR", "postgres://admin:adminpassword@localhost/socialnetwork?sslmode=disable"),
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
@@ -35,6 +39,14 @@ func main() {
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
 		},
 		env: env.GetString("ENV", "development"),
+		mail: mailConfig{
+			//fromEmail: env.Ge....  hello@demomailtrap.co
+			exp:       time.Hour * 24 * 3,
+			fromEmail: "hello@demomailtrap.co",
+			mailtrap: mailtrapConfig{
+				apiKey: env.GetString("MAILTRAP_API_TOKEN", ""),
+			},
+		},
 	}
 
 	logger := zap.Must(zap.NewProduction()).Sugar()
@@ -52,11 +64,17 @@ func main() {
 	defer db.Close()
 	logger.Info("db connection established")
 
+	mailtrap, err := mailer.NewMailtrapClient(cfg.mail.mailtrap.apiKey, cfg.mail.fromEmail)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	store := store.NewStore(db)
 	app := &application{
 		config: cfg,
 		store:  store,
 		logger: logger,
+		mailer: mailtrap,
 	}
 
 	mux := app.mount()
