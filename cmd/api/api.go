@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Raghav847/social-go/docs"
+	"github.com/Raghav847/social-go/internal/auth"
 	"github.com/Raghav847/social-go/internal/env"
 	"github.com/Raghav847/social-go/internal/mailer"
 	"github.com/Raghav847/social-go/internal/store"
@@ -19,10 +20,11 @@ import (
 const version = "0.0.1"
 
 type application struct {
-	config config
-	store  store.Storage
-	logger *zap.SugaredLogger
-	mailer mailer.Client
+	config        config
+	store         store.Storage
+	logger        *zap.SugaredLogger
+	mailer        mailer.Client
+	authenticator auth.Authenticator
 }
 
 type config struct {
@@ -37,6 +39,13 @@ type config struct {
 
 type authConfig struct {
 	basic basicAuthConfig
+	token tokenConfig
+}
+
+type tokenConfig struct {
+	secret string
+	exp    time.Duration
+	iss    string
 }
 
 type basicAuthConfig struct {
@@ -118,7 +127,7 @@ func (app *application) mount() http.Handler {
 		})
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
-			//r.Post("/token", app.createTokenHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 	})
 
